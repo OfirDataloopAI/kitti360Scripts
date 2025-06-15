@@ -15,7 +15,7 @@ def readYAMLFile(fileName):
         yamlFileOut = fin.read()
         myRe = re.compile(r":([^ ])")   # Add space after ":", if it doesn't exist. Python yaml requirement
         yamlFileOut = myRe.sub(r': \1', yamlFileOut)
-        ret = yaml.load(yamlFileOut)
+        ret = yaml.load(yamlFileOut, Loader=yaml.SafeLoader)
     return ret
 
 class Camera:
@@ -85,7 +85,7 @@ class Camera:
     def __call__(self, obj3d, frameId):
 
         vertices = obj3d.vertices
-        heading = obj3d.heading
+        # heading = obj3d.heading
 
         uv, depth = self.project_vertices(vertices, frameId)
 
@@ -93,7 +93,7 @@ class Camera:
         obj3d.vertices_depth = depth 
         obj3d.generateMeshes()
 
-        uv_heading, depth_heading = self.project_vertices(heading, frameId)
+        uv_heading, depth_heading = self.project_vertices(vertices, frameId)
         obj3d.heading_proj = uv_heading
         obj3d.heading_depth = depth_heading
 
@@ -209,14 +209,15 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt
     from labels import id2label
 
-    if 'KITTI360_DATASET' in os.environ:
-        kitti360Path = os.environ['KITTI360_DATASET']
-    else:
-        kitti360Path = os.path.join(os.path.dirname(
-                                os.path.realpath(__file__)), '..', '..')
+    kitti360Path = r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data"
+    # if 'KITTI360_DATASET' in os.environ:
+    #     kitti360Path = os.environ['KITTI360_DATASET']
+    # else:
+    #     kitti360Path = os.path.join(os.path.dirname(
+    #                             os.path.realpath(__file__)), '..', '..')
     
-    seq = 3
-    cam_id = 2
+    seq = 0
+    cam_id = 3
     sequence = '2013_05_28_drive_%04d_sync'%seq
     # perspective
     if cam_id == 0 or cam_id == 1:
@@ -257,7 +258,7 @@ if __name__=="__main__":
         for k,v in annotation3D.objects.items():
             if len(v.keys())==1 and (-1 in v.keys()): # show static only
                 obj3d = v[-1]
-                if not id2label[obj3d.semanticId].name=='building': # show buildings only
+                if not id2label[obj3d.semanticId].name=='car': # show buildings only
                     continue
                 camera(obj3d, frame)
                 vertices = np.asarray(obj3d.vertices_proj).T

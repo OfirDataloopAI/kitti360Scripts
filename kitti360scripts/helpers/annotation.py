@@ -36,7 +36,7 @@ def global2local(globalId):
     semanticId = globalId // MAX_N
     instanceId = globalId % MAX_N
     if isinstance(globalId, np.ndarray):
-        return semanticId.astype(np.int), instanceId.astype(np.int)
+        return semanticId.astype(np.int16), instanceId.astype(np.int16)
     else:
         return int(semanticId), int(instanceId)
 
@@ -79,8 +79,6 @@ class KITTI360Bbox3D(KITTI360Object):
         self.lines = [[0,5],[1,4],[2,7],[3,6],
                       [0,1],[1,3],[3,2],[2,0],
                       [4,5],[5,7],[7,6],[6,4]]
-        self._heading = np.array([[0.,0.,0.],
-                                 [1.,0.,0.]])
 
         # the ID of the corresponding object
         self.semanticId = -1
@@ -136,7 +134,6 @@ class KITTI360Bbox3D(KITTI360Object):
         self.faces = faces
         self.R = R
         self.T = T
-        self.heading = np.matmul(R, self._heading.transpose()).transpose() + T
 
     def parseBbox(self, child):
         semanticIdKITTI = int(child.find('semanticId').text)
@@ -359,7 +356,7 @@ class Annotation3D:
     # Constructor
     def __init__(self, labelDir='', sequence=''):
 
-        labelPath = glob.glob(os.path.join(labelDir, '*', '%s.xml' % sequence)) # train or test
+        labelPath = glob.glob(os.path.join(labelDir, 'train', '%s.xml' % sequence)) # train or test
         if len(labelPath)<1:
             raise RuntimeError('%s does not exist! Please specify KITTI360_DATASET in your environment path.' % labelPath)
         else:
