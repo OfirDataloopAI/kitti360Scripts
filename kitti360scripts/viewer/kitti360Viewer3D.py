@@ -176,8 +176,22 @@ class Kitti360Viewer3D(object):
         if window in self.pointClouds.keys():
             pcd = self.pointClouds[window]
         else:
-            #pcd = open3d.io.read_point_cloud(pcdFile)
-            data = read_ply(pcdFile)
+            if pcdFile.endswith('.pcd'):
+                pcd = open3d.io.read_point_cloud(pcdFile)
+                # Convert to numpy array
+                points_np = np.asarray(pcd.points)  # shape: (N, 3)
+
+                # Build the data dictionary
+                data = {
+                    'x': points_np[:, 0],
+                    'y': points_np[:, 1],
+                    'z': points_np[:, 2],
+                    'red': np.zeros(points_np.shape[0], dtype=np.uint8),
+                    'green': np.zeros(points_np.shape[0], dtype=np.uint8),
+                    'blue': np.zeros(points_np.shape[0], dtype=np.uint8),
+                }
+            else:
+                data = read_ply(pcdFile)
             points=np.vstack((data['x'], data['y'], data['z'])).T
             color=np.vstack((data['red'], data['green'], data['blue'])).T
             pcd = open3d.geometry.PointCloud()
@@ -300,7 +314,7 @@ if __name__=='__main__':
                                 help='The maximum number of bounding boxes to visualize')
 
     args = parser.parse_args()
-
+    args.mode = 'bbox'
     v = Kitti360Viewer3D(args.sequence)
 
     if args.mode=='bbox':
@@ -317,17 +331,24 @@ if __name__=='__main__':
             open3d.visualization.draw_geometries([pcd])
 
     else:
-        # if not len(v.bboxes):
-        #     raise RuntimeError('No bounding boxes found! Please set KITTI360_DATASET in your environment path')
+        if not len(v.bboxes):
+            raise RuntimeError('No bounding boxes found! Please set KITTI360_DATASET in your environment path')
+
+        # # Option1
+        # # pcdFileList = v.annotation3DPly.pcdFileList
         #
-        # pcdFileList = v.annotation3DPly.pcdFileList
+        # # Option2
+        # import pathlib
+        # pcdFileList = list(pathlib.Path(r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data\data_3d_raw\2013_05_28_drive_0000_sync\velodyne_points\data").glob('*.pcd'))
+        # pcdFileList = [str(pcdFile) for pcdFile in pcdFileList]
+        #
         # # group the bboxes by windows
         # windows_unique = np.unique(np.array(v.bboxes_window), axis=0)
         # for idx,window in enumerate(windows_unique):
         #
         #     # load point cloud for visualization
-        #     if not '%010d_%010d' % (window[0], window[1]) in pcdFileList[idx]:
-        #         raise RuntimeError("Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (window, pcdFileList[idx]) )
+        #     # if not '%010d_%010d' % (window[0], window[1]) in pcdFileList[idx]:
+        #     #     raise RuntimeError("Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (window, pcdFileList[idx]) )
         #     pcd = v.loadWindow(pcdFileList[idx], args.mode)
         #     pcdCenter = np.median(np.asarray(pcd.points),axis=0)
         #     # filter out outliers in pcd
@@ -349,16 +370,23 @@ if __name__=='__main__':
         if not len(v.bboxes):
             raise RuntimeError('No bounding boxes found! Please set KITTI360_DATASET in your environment path')
 
-        pcdFileList = v.annotation3DPly.pcdFileList
+        # Option1
+        # pcdFileList = v.annotation3DPly.pcdFileList
+
+        # Option2
+        import pathlib
+        pcdFileList = list(pathlib.Path(r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data\data_3d_raw\2013_05_28_drive_0000_sync\velodyne_points\data").glob('*.pcd'))
+        pcdFileList = [str(pcdFile) for pcdFile in pcdFileList]
+        #
         # group the bboxes by windows
         windows_unique = np.unique(np.array(v.bboxes_window), axis=0)
         for idx, window in enumerate(windows_unique):
 
             # load point cloud for visualization
-            if not '%010d_%010d' % (window[0], window[1]) in pcdFileList[idx]:
-                raise RuntimeError(
-                    "Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (
-                        window, pcdFileList[idx]))
+            # if not '%010d_%010d' % (window[0], window[1]) in pcdFileList[idx]:
+            #     raise RuntimeError(
+            #         "Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (
+            #             window, pcdFileList[idx]))
             pcd = v.loadWindow(pcdFileList[idx], args.mode)
             pcdCenter = np.median(np.asarray(pcd.points), axis=0)
             # filter out outliers in pcd
