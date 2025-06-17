@@ -209,12 +209,12 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt
     from labels import id2label
 
-    kitti360Path = r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data"
-    # if 'KITTI360_DATASET' in os.environ:
-    #     kitti360Path = os.environ['KITTI360_DATASET']
-    # else:
-    #     kitti360Path = os.path.join(os.path.dirname(
-    #                             os.path.realpath(__file__)), '..', '..')
+    os.environ['KITTI360_DATASET'] = r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data"
+    if 'KITTI360_DATASET' in os.environ:
+        kitti360Path = os.environ['KITTI360_DATASET']
+    else:
+        kitti360Path = os.path.join(os.path.dirname(
+                                os.path.realpath(__file__)), '..', '..')
     
     seq = 0
     cam_id = 3

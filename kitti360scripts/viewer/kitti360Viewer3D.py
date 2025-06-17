@@ -129,7 +129,7 @@ class Kitti360Viewer3D(object):
                 color[globalIds==uid] = self.getColor(instanceId)
             else:
                 color[globalIds==uid] = (96,96,96) # stuff objects in instance mode
-        color = color.astype(np.float)/255.0
+        color = color.astype(np.float16)/255.0
         return color
 
     def assignColorConfidence(self, confidence):
@@ -182,7 +182,7 @@ class Kitti360Viewer3D(object):
             color=np.vstack((data['red'], data['green'], data['blue'])).T
             pcd = open3d.geometry.PointCloud()
             pcd.points = open3d.utility.Vector3dVector(points)
-            pcd.colors = open3d.utility.Vector3dVector(color.astype(np.float)/255.)
+            pcd.colors = open3d.utility.Vector3dVector(color.astype(np.float16)/255.)
         
         # assign color
         if colorType=='semantic' or colorType=='instance':
@@ -289,6 +289,7 @@ class Kitti360Viewer3D(object):
 
 
 if __name__=='__main__':
+    os.environ['KITTI360_DATASET'] = r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data"
 
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--sequence', type=int, default=0, 
