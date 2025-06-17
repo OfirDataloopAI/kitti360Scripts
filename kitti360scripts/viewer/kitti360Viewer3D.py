@@ -317,28 +317,60 @@ if __name__=='__main__':
             open3d.visualization.draw_geometries([pcd])
 
     else:
+        # if not len(v.bboxes):
+        #     raise RuntimeError('No bounding boxes found! Please set KITTI360_DATASET in your environment path')
+        #
+        # pcdFileList = v.annotation3DPly.pcdFileList
+        # # group the bboxes by windows
+        # windows_unique = np.unique(np.array(v.bboxes_window), axis=0)
+        # for idx,window in enumerate(windows_unique):
+        #
+        #     # load point cloud for visualization
+        #     if not '%010d_%010d' % (window[0], window[1]) in pcdFileList[idx]:
+        #         raise RuntimeError("Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (window, pcdFileList[idx]) )
+        #     pcd = v.loadWindow(pcdFileList[idx], args.mode)
+        #     pcdCenter = np.median(np.asarray(pcd.points),axis=0)
+        #     # filter out outliers in pcd
+        #     validPoints = np.where(np.linalg.norm(np.asarray(pcd.points)-pcdCenter,axis=1)<1e+3)[0]
+        #     pcd = pcd.select_by_index(validPoints)
+        #     pcdCenter = np.median(np.asarray(pcd.points),axis=0)
+        #
+        #     # load instance bounding boxes not too far away from the point cloud center
+        #     bboxes = [v.bboxes[i] for i in range(len(v.bboxes)) if (np.linalg.norm(np.mean(np.asarray(v.bboxes[i].vertices), axis=0)-pcdCenter)<120)]
+        #     print('Visualizing %06d_%06d with %d objects' % (window[0], window[1], len(bboxes)))
+        #     if len(bboxes)>args.max_bbox:
+        #         print('Randomly sample %d/%d bboxes for rendering efficiency' % (args.max_bbox, len(bboxes)))
+        #         random_list = np.random.permutation(len(bboxes))[:args.max_bbox]
+        #         bboxes = [bboxes[i] for i in random_list]
+        #
+        #     open3d.visualization.draw_geometries(bboxes + [pcd])
+
+        # TODO: https://github.com/autonomousvision/kitti360Scripts/issues/129
         if not len(v.bboxes):
             raise RuntimeError('No bounding boxes found! Please set KITTI360_DATASET in your environment path')
 
-        pcdFileList = v.annotation3DPly.pcdFileList 
+        pcdFileList = v.annotation3DPly.pcdFileList
         # group the bboxes by windows
         windows_unique = np.unique(np.array(v.bboxes_window), axis=0)
-        for idx,window in enumerate(windows_unique):
+        for idx, window in enumerate(windows_unique):
 
             # load point cloud for visualization
             if not '%010d_%010d' % (window[0], window[1]) in pcdFileList[idx]:
-                raise RuntimeError("Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (window, pcdFileList[idx]) )
+                raise RuntimeError(
+                    "Window %s does not match with point cloud name %s! Please make sure that you downloaded the accumulated point clouds correctly." % (
+                        window, pcdFileList[idx]))
             pcd = v.loadWindow(pcdFileList[idx], args.mode)
-            pcdCenter = np.median(np.asarray(pcd.points),axis=0)
+            pcdCenter = np.median(np.asarray(pcd.points), axis=0)
             # filter out outliers in pcd
-            validPoints = np.where(np.linalg.norm(np.asarray(pcd.points)-pcdCenter,axis=1)<1e+3)[0]
+            validPoints = np.where(np.linalg.norm(np.asarray(pcd.points) - pcdCenter, axis=1) < 1e+3)[0]
             pcd = pcd.select_by_index(validPoints)
-            pcdCenter = np.median(np.asarray(pcd.points),axis=0)
+            pcdCenter = np.median(np.asarray(pcd.points), axis=0)
 
             # load instance bounding boxes not too far away from the point cloud center
-            bboxes = [v.bboxes[i] for i in range(len(v.bboxes)) if (np.linalg.norm(np.mean(np.asarray(v.bboxes[i].vertices), axis=0)-pcdCenter)<120)]
+            bboxes = [v.bboxes[i] for i in range(len(v.bboxes)) if
+                      (np.linalg.norm(np.mean(np.asarray(v.bboxes[i].vertices), axis=0) - pcdCenter) < 120)]
             print('Visualizing %06d_%06d with %d objects' % (window[0], window[1], len(bboxes)))
-            if len(bboxes)>args.max_bbox:
+            if len(bboxes) > args.max_bbox:
                 print('Randomly sample %d/%d bboxes for rendering efficiency' % (args.max_bbox, len(bboxes)))
                 random_list = np.random.permutation(len(bboxes))[:args.max_bbox]
                 bboxes = [bboxes[i] for i in random_list]
