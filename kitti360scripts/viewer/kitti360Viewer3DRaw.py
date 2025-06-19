@@ -25,14 +25,18 @@ from kitti360scripts.devkits.commons.loadCalibration import loadCalibrationCamer
 
 CSUPPORT = True
 # Check if C-Support is available for better performance
-if CSUPPORT:
-    try:
-        from kitti360scripts.helpers import curlVelodyneData
-    except:
-        CSUPPORT = False
-        print('CSUPPORT is required for unwrapping the velodyne data!')
-        print('Run ``CYTHONIZE_EVAL= python setup.py build_ext --inplace`` to build with cython')
-        sys.exit(-1)
+
+# TODO: Disable C-Support for now, since it is not working properly
+# if CSUPPORT:
+#     try:
+#         import pyximport
+#         pyximport.install(setup_args={"script_args": ["--verbose"]})
+#         from kitti360scripts.helpers import curlVelodyneData
+#     except:
+#         CSUPPORT = False
+#         print('CSUPPORT is required for unwrapping the velodyne data!')
+#         print('Run ``CYTHONIZE_EVAL= python setup.py build_ext --inplace`` to build with cython')
+#         sys.exit(-1)
 
 
 # the main class that loads raw 3D scans
@@ -128,6 +132,49 @@ class Kitti360Viewer3DRaw(object):
         t = Tr_delta[0:3,3]
         return r.flatten(),t
 
+    def cCurlVelodyneData(self,
+                          veloIn: np.ndarray,
+                          veloOut: np.ndarray,
+                          r: np.ndarray,
+                          t: np.ndarray) -> np.ndarray:
+        """
+        Transforms Velodyne data with rotation (Rodrigues) and translation.
+
+        Supports 4D point cloud [x, y, z, intensity].
+
+        :param veloIn: (N, 4) input Velodyne point cloud
+        :param veloOut: (N, 4) output buffer (not used; returned fresh)
+        :param r: (3,) rotation vector (Rodrigues form)
+        :param t: (3,) translation vector
+        :return: (N, 4) transformed point cloud with unchanged intensity
+        """
+        # Ensure input shape is correct
+        assert veloIn.shape[1] == 4, "Expected input shape (N, 4) with intensity"
+
+        # Step 1: Extract XYZ and intensity
+        xyz = np.ascontiguousarray(veloIn[:, :3], dtype=np.float64)
+        intensity = veloIn[:, 3:4]  # keep as (N, 1) for re-concatenation
+
+        # Step 2: Compute rotation matrix from Rodrigues vector
+        theta = np.linalg.norm(r)
+        if theta == 0:
+            R = np.eye(3)
+        else:
+            r_hat = r / theta
+            K = np.array([
+                [0, -r_hat[2], r_hat[1]],
+                [r_hat[2], 0, -r_hat[0]],
+                [-r_hat[1], r_hat[0], 0]
+            ])
+            R = np.eye(3) + np.sin(theta) * K + (1 - np.cos(theta)) * (K @ K)
+
+        # Step 3: Apply rotation and translation
+        xyz_transformed = (R @ xyz.T).T + t
+
+        # Step 4: Concatenate with intensity
+        veloOut_final = np.hstack((xyz_transformed, intensity))
+
+        return np.copy(veloOut_final)
 
     def curlVelodyneData(self, frame, pcd):
         pcd=pcd.astype(np.float64)
@@ -135,7 +182,8 @@ class Kitti360Viewer3DRaw(object):
         # get curl parameters 
         r,t = self.curlParameterFromPoses(frame)
         # unwrap points to compensate for ego motion
-        pcd_curled = curlVelodyneData.cCurlVelodyneData(pcd, pcd_curled, r, t)
+        # pcd_curled = curlVelodyneData.cCurlVelodyneData(pcd, pcd_curled, r, t)
+        pcd_curled = self.cCurlVelodyneData(pcd, pcd_curled, r, t)
         return pcd_curled.astype(np.float32)
         
 
@@ -186,8 +234,8 @@ def projectVeloToImage(cam_id=0, seq=0):
         pointsCam = pointsCam[:,:3]
         # project to image space
         u,v, depth= camera.cam2image(pointsCam.T)
-        u = u.astype(np.int)
-        v = v.astype(np.int)
+        u = u.astype(np.int16)
+        v = v.astype(np.int16)
 
         # prepare depth map for visualization
         depthMap = np.zeros((camera.height, camera.width))
@@ -219,10 +267,11 @@ def projectVeloToImage(cam_id=0, seq=0):
         plt.show()
 
 if __name__=='__main__':
+    os.environ['KITTI360_DATASET'] = r"C:\Users\Ofir\PycharmProjects\kitti-datasets\KITTI-360\data\train_data"
 
     visualizeIn2D = True
     # sequence index
-    seq = 2
+    seq = 0
     # set it to 0 or 1 for projection to perspective images
     #           2 or 3 for projecting to fisheye images
     cam_id = 3
